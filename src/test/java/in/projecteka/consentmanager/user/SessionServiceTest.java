@@ -43,7 +43,7 @@ class SessionServiceTest {
         var expectedSession = session().build();
         when(tokenService.tokenForUser(sessionRequest.getUsername(), sessionRequest.getPassword()))
                 .thenReturn(Mono.just(expectedSession));
-        var sessionService = new SessionService(tokenService, null);
+        var sessionService = new SessionService(tokenService, null,null,null);
 
         var sessionPublisher = sessionService.forNew(sessionRequest);
 
@@ -60,7 +60,7 @@ class SessionServiceTest {
     })
     void returnUnAuthorizedErrorWhenUsernameIsEmpty(@ConvertWith(NullableConverter.class) String value) {
         var sessionRequest = sessionRequest().username(value).build();
-        var sessionService = new SessionService(tokenService, null);
+        var sessionService = new SessionService(tokenService, null,null,null);
 
         var sessionPublisher = sessionService.forNew(sessionRequest);
 
@@ -79,7 +79,7 @@ class SessionServiceTest {
     void returnUnAuthorizedErrorWhenPasswordIsEmpty(
             @ConvertWith(NullableConverter.class) String value) {
         var sessionRequest = sessionRequest().password(value).build();
-        var sessionService = new SessionService(tokenService, null);
+        var sessionService = new SessionService(tokenService, null,null,null);
 
         var sessionPublisher = sessionService.forNew(sessionRequest);
 
@@ -91,7 +91,7 @@ class SessionServiceTest {
     @Test
     void returnUnAuthorizedWhenAnyOtherErrorHappens() {
         var sessionRequest = sessionRequest().build();
-        var sessionService = new SessionService(tokenService, null);
+        var sessionService = new SessionService(tokenService, null,null,null);
         when(tokenService.tokenForUser(any(), any())).thenReturn(Mono.error(new Exception()));
 
         var sessionPublisher = sessionService.forNew(sessionRequest);
@@ -109,7 +109,7 @@ class SessionServiceTest {
         when(blacklistedTokens.put(String.format(BLACKLIST_FORMAT, BLACKLIST, testAccessToken),"")).
                 thenReturn(Mono.empty());
         when(tokenService.revoke(refreshToken)).thenReturn(Mono.empty());
-        SessionService sessionService = new SessionService(tokenService, blacklistedTokens);
+        SessionService sessionService = new SessionService(tokenService, blacklistedTokens,null,null);
         Mono<Void> logout = sessionService.logout(testAccessToken, logoutRequest);
 
         StepVerifier.create(logout).verifyComplete();

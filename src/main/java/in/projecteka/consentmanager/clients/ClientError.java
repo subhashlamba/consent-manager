@@ -5,6 +5,7 @@ import in.projecteka.consentmanager.clients.model.ErrorRepresentation;
 import lombok.Getter;
 import lombok.ToString;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.reactive.function.client.ClientResponse;
 
 import static in.projecteka.consentmanager.clients.model.ErrorCode.CONSENT_ARTEFACT_EXPIRED;
 import static in.projecteka.consentmanager.clients.model.ErrorCode.CONSENT_ARTEFACT_FORBIDDEN;
@@ -151,10 +152,10 @@ public class ClientError extends Throwable {
                 new ErrorRepresentation(new Error(INVALID_TOKEN, "Token verification failed")));
     }
 
-    public static ClientError unAuthorizedRequest() {
+    public static ClientError unAuthorizedRequest(String errorMessage) {
         return new ClientError(UNAUTHORIZED,
                 new ErrorRepresentation(new Error(USERNAME_OR_PASSWORD_INCORRECT,
-                        "Username or password is incorrect")));
+                        errorMessage)));
     }
 
     public static ClientError userAlreadyExists(String username) {

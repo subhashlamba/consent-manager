@@ -60,6 +60,8 @@ public class SecurityConfiguration {
                                           "/ValueSet/**.json",
                                           "/users/verify",
                                           "/users/permit",
+                                          "/otpsession/verify",
+                                          "/otpsession/permit",
                                           "/sessions",
                                           "/**.html",
                                           "/**.js",
