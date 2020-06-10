@@ -33,3 +33,4 @@ bin/
 ### VS Code ###
 .vscode/
 logs/
+volumes/
