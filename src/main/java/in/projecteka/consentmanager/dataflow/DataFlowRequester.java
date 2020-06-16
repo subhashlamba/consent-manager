@@ -4,6 +4,8 @@ import in.projecteka.consentmanager.clients.ClientError;
 import in.projecteka.consentmanager.clients.ConsentManagerClient;
 import in.projecteka.consentmanager.dataflow.model.*;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
@@ -12,6 +14,7 @@ import java.util.UUID;
 
 @AllArgsConstructor
 public class DataFlowRequester {
+    private static final Logger logger = LoggerFactory.getLogger(DataFlowRequester.class);
     private final ConsentManagerClient consentManagerClient;
     private final DataFlowRequestRepository dataFlowRequestRepository;
     private final PostDataFlowRequestApproval postDataFlowrequestApproval;
@@ -24,6 +27,19 @@ public class DataFlowRequester {
                         .thenReturn(flowRequest))
                 .flatMap(flowRequest -> notifyHIP(transactionId, flowRequest))
                 .thenReturn(DataFlowRequestResponse.builder().transactionId(transactionId).build());
+    }
+
+    public Mono<Void> updateDataflowRequestStatus(HealthInformationResponse healthInformationResponse) {
+        if (healthInformationResponse.getHiRequest() != null) {
+            logger.info("DataFlowRequest response came for transactionId {}", healthInformationResponse.getHiRequest().getTransactionId());
+            return dataFlowRequestRepository.updateDataFlowRequestStatus(
+                    healthInformationResponse.getHiRequest().getTransactionId(),
+                    healthInformationResponse.getHiRequest().getSessionStatus());
+        }
+
+        logger.error("DataFlowRequest failed for request id {}", healthInformationResponse.getResp().getRequestId());
+        return Mono.empty();
+
     }
 
     private Mono<Void> notifyHIP(String transactionId, DataFlowRequest dataFlowRequest) {
