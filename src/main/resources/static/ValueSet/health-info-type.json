@@ -1,4 +1,5 @@
 {
+    "swagger": "2.0",
   "resourceType": "ValueSet",
   "id": "health-information-type",
   "version": "1",
