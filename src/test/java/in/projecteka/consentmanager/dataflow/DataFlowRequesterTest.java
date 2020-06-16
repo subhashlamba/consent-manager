@@ -1,21 +1,29 @@
 package in.projecteka.consentmanager.dataflow;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import in.projecteka.consentmanager.clients.ClientError;
 import in.projecteka.consentmanager.clients.ConsentManagerClient;
 import in.projecteka.consentmanager.dataflow.model.*;
+import in.projecteka.consentmanager.link.discovery.model.patient.response.GatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
+import java.util.List;
 import java.util.Objects;
 
 import static in.projecteka.consentmanager.dataflow.TestBuilders.consentArtefactRepresentation;
 import static in.projecteka.consentmanager.dataflow.TestBuilders.dataFlowRequest;
+import static in.projecteka.consentmanager.dataflow.TestBuilders.healthInformationResponseBuilder;
 import static in.projecteka.consentmanager.dataflow.Utils.toDate;
 import static in.projecteka.consentmanager.dataflow.Utils.toDateWithMilliSeconds;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -83,5 +91,35 @@ public class DataFlowRequesterTest {
 
         StepVerifier.create(dataFlowRequester.requestHealthData("1", request))
                 .expectErrorMatches(e -> (e instanceof ClientError) && ((ClientError) e).getHttpStatus().is4xxClientError());
+    }
+
+    @Test
+    void shouldUpdateHealtInfoStatus() {
+        var healthInformationResponse = healthInformationResponseBuilder().build();
+
+        when(dataFlowRequestRepository.updateDataFlowRequestStatus(healthInformationResponse.getHiRequest().getTransactionId(),
+                healthInformationResponse.getHiRequest().getSessionStatus())).thenReturn(Mono.create(MonoSink::success));
+
+        StepVerifier.create(dataFlowRequester.updateDataflowRequestStatus(healthInformationResponse))
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldLogErrorWhenAcknowledgementIsAbsent() {
+        var gatewayResponse = GatewayResponse.builder().requestId("requestId").build();
+        var healthInformationResponse = healthInformationResponseBuilder()
+                .resp(gatewayResponse)
+                .hiRequest(null)
+                .build();
+
+        Logger logger = (Logger) LoggerFactory.getLogger(DataFlowRequester.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
+
+        StepVerifier.create(dataFlowRequester.updateDataflowRequestStatus(healthInformationResponse))
+                .verifyComplete();
+        List<ILoggingEvent> logsList = listAppender.list;
+        assertEquals("DataFlowRequest failed for request id requestId",logsList.get(0).getFormattedMessage());
     }
 }
